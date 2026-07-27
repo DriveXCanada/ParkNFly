@@ -6,15 +6,18 @@
   "description": "Park N Fly driver & vehicle tracker by Drivex",
   "scripts": {
     "dev": "vite",
+    "dev:server": "node server/index.js",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "serve -s dist -l ${PORT:-3000}",
+    "start": "node server/index.js",
     "lint": "eslint ."
   },
   "dependencies": {
+    "express": "^4.22.2",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "lucide-react": "^0.451.0",
+    "pg": "^8.22.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",

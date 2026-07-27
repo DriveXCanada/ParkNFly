@@ -12,6 +12,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { useManagerStore } from './useManagerStore'
+import { isSyncEnabled } from './sync'
+import { loginRequest } from '../api/client'
 
 export const useAuthStore = create(
   persist(
@@ -19,31 +21,43 @@ export const useAuthStore = create(
       currentUser: null, // { id, name, email, role, locationId }
       activeLocationId: null, // location currently being viewed
 
-      login: (email, password) => {
-        const accounts = useManagerStore.getState().accounts
+      // When synced, credentials are verified server-side (passwords never
+      // reach the browser). Local-only mode falls back to the seeded accounts.
+      login: async (email, password) => {
         const locations = useManagerStore.getState().locations
+        const asSession = (acct) => {
+          const defaultLoc =
+            acct.role === 'owner'
+              ? locations.find((l) => l.active)?.id || locations[0]?.id || null
+              : acct.locationId
+          set({
+            currentUser: {
+              id: acct.id,
+              name: acct.name,
+              email: acct.email,
+              role: acct.role,
+              locationId: acct.locationId,
+            },
+            activeLocationId: defaultLoc,
+          })
+          return { ok: true, role: acct.role }
+        }
+
+        if (isSyncEnabled()) {
+          try {
+            const { account } = await loginRequest(email, password)
+            return asSession(account)
+          } catch {
+            return { ok: false, error: 'Invalid email or password.' }
+          }
+        }
+
+        const accounts = useManagerStore.getState().accounts
         const match = accounts.find(
           (a) => a.email.toLowerCase() === String(email).trim().toLowerCase() && a.password === password,
         )
         if (!match) return { ok: false, error: 'Invalid email or password.' }
-
-        // Owner defaults to the first active location; managers to their own.
-        const defaultLoc =
-          match.role === 'owner'
-            ? locations.find((l) => l.active)?.id || locations[0]?.id || null
-            : match.locationId
-
-        set({
-          currentUser: {
-            id: match.id,
-            name: match.name,
-            email: match.email,
-            role: match.role,
-            locationId: match.locationId,
-          },
-          activeLocationId: defaultLoc,
-        })
-        return { ok: true, role: match.role }
+        return asSession(match)
       },
 
       logout: () => set({ currentUser: null, activeLocationId: null }),
