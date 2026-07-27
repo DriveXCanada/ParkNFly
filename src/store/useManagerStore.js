@@ -6,7 +6,7 @@
  * mock data files, then PERSISTED to localStorage so everything you add
  * (locations, managers, staff, vehicles, incidents, notes) survives reloads.
  *
- * AIRTABLE: each collection maps to an Airtable table; every mutation below
+ * BACKEND: each collection maps to a Postgres table; every mutation below
  * becomes a POST/PATCH. Swap the seed imports + persist layer for fetch hooks.
  */
 
@@ -87,6 +87,9 @@ export const useManagerStore = create(
     (set, get) => ({
       ...seed(),
 
+      // Whether this session is connected to the shared cloud database.
+      synced: false,
+
       // ---- Backend sync (Railway Postgres) ---------------------------------
       // Adopt a fresh snapshot from the server into local state.
       _applyServer: (data) => {
@@ -118,13 +121,16 @@ export const useManagerStore = create(
           data = await getBootstrap()
         } catch {
           setSyncEnabled(false)
+          set({ synced: false })
           return false
         }
         if (!data || !data.configured) {
           setSyncEnabled(false)
+          set({ synced: false })
           return false
         }
         setSyncEnabled(true)
+        set({ synced: true })
         const serverEmpty = !(data.accounts && data.accounts.length)
         if (serverEmpty) {
           const s = get()

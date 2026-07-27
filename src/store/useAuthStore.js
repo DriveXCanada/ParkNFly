@@ -5,7 +5,7 @@
  * accounts held in useManagerStore (plain text in the browser). This is NOT
  * secure and must be replaced with real authentication before launch.
  *
- * AIRTABLE: Replace login() with a real auth provider (e.g. Airtable + Auth0 /
+ * BACKEND: Replace login() with a real auth provider (e.g. Auth0 /
  * Clerk / Supabase Auth). currentUser would come from the verified session.
  */
 

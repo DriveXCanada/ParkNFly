@@ -1,10 +1,10 @@
 /**
  * MOCK DATA — ShuttleLog Halifax
- * Airtable Base: ParkNFly_Halifax
+ * Data store: Railway Postgres
  * Table: Shifts (+ linked Trips)
- * Replace this file with: useFetchShifts() hook → Airtable API
+ * Replace this file with: useFetchShifts() hook → the backend API
  *
- * AIRTABLE: Replace with → GET /Shifts table + linked /Trips table
+ * BACKEND: Replace with → GET /Shifts table + linked /Trips table
  * Shift fields: Shift_ID, Driver_ID, Vehicle_ID, Date, Start_Time,
  *               End_Time, Odo_Start, Odo_End
  * Trip fields:  Trip_Number, Depart_Lot_Time, Arrive_Airport_Time,

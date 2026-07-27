@@ -2,7 +2,7 @@
  * analytics.js — aggregation helpers for the manager dashboard & reports.
  * Pure functions over the mock collections (shifts, trips, inspections).
  *
- * AIRTABLE: these computations would run server-side or via Airtable formula
+ * BACKEND: these computations would run server-side or via the backend formula
  * fields / rollups once migrated; kept client-side here for the concept.
  */
 

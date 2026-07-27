@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 /**
  * Simulates an async API fetch delay so loading states are demonstrable.
  *
- * AIRTABLE: replace with a real data-fetching hook (e.g. SWR / react-query)
- * hitting the Airtable REST API. The `loading` flag maps to request state.
+ * BACKEND: replace with a real data-fetching hook (e.g. SWR / react-query)
+ * hitting the backend REST API. The `loading` flag maps to request state.
  */
 export function useFakeLoad(delay = 800, deps = []) {
   const [loading, setLoading] = useState(true)

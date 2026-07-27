@@ -1,6 +1,6 @@
 /**
  * Formatting helpers — dates, times, durations.
- * All times are stored as ISO 8601 strings (simulating Airtable datetime fields).
+ * All times are stored as ISO 8601 strings (simulating the backend datetime fields).
  */
 
 const pad = (n) => String(n).padStart(2, '0')

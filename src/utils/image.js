@@ -3,8 +3,8 @@
  * data URL. Photos are stored as data URLs in the prototype (localStorage /
  * mock store). Downscaling keeps localStorage from filling up.
  *
- * AIRTABLE: replace data-URL storage with uploads to an attachment field
- * (Airtable Attachments) or object storage (S3); store the returned URL.
+ * BACKEND: replace data-URL storage with uploads to an attachment field
+ * object storage (e.g. S3); store the returned URL.
  */
 
 const MAX_DIM = 900

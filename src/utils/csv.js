@@ -3,7 +3,7 @@
  * it builds a CSV and triggers a download. Values are escaped for commas,
  * quotes, and newlines.
  *
- * AIRTABLE: unchanged after migration — it just serializes whatever records
+ * BACKEND: unchanged after migration — it just serializes whatever records
  * the page already has in memory.
  */
 
