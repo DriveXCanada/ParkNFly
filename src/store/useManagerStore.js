@@ -20,22 +20,14 @@ import { mockLocations } from '../data/mockLocations'
 import { mockAccounts } from '../data/mockAccounts'
 import { mockIncidents } from '../data/mockIncidents'
 import { inspectionGroups, defaultCriticalItems } from '../data/inspectionItems'
+import { todayKey } from '../utils/formatters'
+import { DEMO, BOOTSTRAP_OWNER } from '../config'
 
 const initialChecklist = inspectionGroups.flatMap((g) =>
   g.items.map((i) => ({ key: i.key, label: i.label, category: g.label, active: true })),
 )
 
-// Fresh seed snapshot (used on first load and on "reset system").
-const seed = () => ({
-  locations: mockLocations.map((l) => ({ ...l })),
-  accounts: mockAccounts.map((a) => ({ ...a })),
-  drivers: mockDrivers.map((d) => ({ ...d })),
-  vehicles: mockVehicles.map((v) => ({ ...v })),
-  shifts: mockShifts.map((s) => ({ ...s })),
-  trips: flattenTrips(mockShifts),
-  inspections: mockInspections.map((i) => ({ ...i })),
-  incidents: mockIncidents.map((i) => ({ ...i })),
-  referenceToday: REFERENCE_TODAY,
+const baseConfig = () => ({
   settings: {
     notifications: {
       failedInspectionAlerts: true,
@@ -49,6 +41,38 @@ const seed = () => ({
   criticalItems: [...defaultCriticalItems],
   reportTimestamps: { daily: null, inspection: null, operations: null, incident: null },
 })
+
+// DEMO seed — full sample dataset for the client showcase.
+const demoSeed = () => ({
+  locations: mockLocations.map((l) => ({ ...l })),
+  accounts: mockAccounts.map((a) => ({ ...a })),
+  drivers: mockDrivers.map((d) => ({ ...d })),
+  vehicles: mockVehicles.map((v) => ({ ...v })),
+  shifts: mockShifts.map((s) => ({ ...s })),
+  trips: flattenTrips(mockShifts),
+  inspections: mockInspections.map((i) => ({ ...i })),
+  incidents: mockIncidents.map((i) => ({ ...i })),
+  referenceToday: REFERENCE_TODAY,
+  ...baseConfig(),
+})
+
+// BLANK seed — clean, production-ready system: no sample data, one bootstrap
+// owner account, the functional inspection checklist, and today's real date.
+const blankSeed = () => ({
+  locations: [],
+  accounts: [{ ...BOOTSTRAP_OWNER }],
+  drivers: [],
+  vehicles: [],
+  shifts: [],
+  trips: [],
+  inspections: [],
+  incidents: [],
+  referenceToday: todayKey(),
+  ...baseConfig(),
+})
+
+// Fresh seed snapshot (used on first load and on "reset system").
+const seed = () => (DEMO ? demoSeed() : blankSeed())
 
 let seq = Date.now()
 const newId = (prefix) => `${prefix}-${(seq++).toString(36).toUpperCase()}`
@@ -252,8 +276,15 @@ export const useManagerStore = create(
       resetSystem: () => set({ ...seed() }),
     }),
     {
-      name: 'shuttlelog-manager',
-      version: 3,
+      name: DEMO ? 'shuttlelog-manager' : 'parknfly-manager',
+      version: 4,
+      // In live (blank) mode, always track the real current date rather than
+      // freezing referenceToday at first-load.
+      merge: (persisted, current) => {
+        const merged = { ...current, ...(persisted || {}) }
+        if (!DEMO) merged.referenceToday = todayKey()
+        return merged
+      },
     },
   ),
 )

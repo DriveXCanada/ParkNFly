@@ -9,6 +9,7 @@ import { Button } from '../../components/shared/Button'
 import { Modal } from '../../components/shared/Modal'
 import { ParkNFlyMark } from '../../components/shared/Logo'
 import { inspectionGroups } from '../../data/inspectionItems'
+import { DEMO } from '../../config'
 
 const NOTIFICATION_LABELS = {
   failedInspectionAlerts: 'Failed inspection alerts',
@@ -189,11 +190,12 @@ export default function Settings() {
             <RotateCcw size={18} className="text-danger" /> Reset System Data
           </h2>
           <p className="mt-1 text-sm text-graytext">
-            Wipes everything you've added (locations, managers, staff, vehicles, incidents, shifts, notes) from this
-            browser and restores the original demo dataset. Cannot be undone.
+            {DEMO
+              ? "Wipes everything you've added from this browser and restores the original demo dataset. Cannot be undone."
+              : "Wipes all data (locations, managers, staff, vehicles, incidents, shifts, notes) from this browser and returns the system to empty. Cannot be undone."}
           </p>
           <Button className="mt-3" variant="danger" icon={RotateCcw} onClick={() => setResetOpen(true)}>
-            Reset to Demo Data
+            {DEMO ? 'Reset to Demo Data' : 'Reset System (Clear All)'}
           </Button>
         </Card>
       )}
@@ -210,7 +212,7 @@ export default function Settings() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setResetOpen(false)}>Cancel</Button>
-            <Button variant="danger" onClick={() => { resetSystem(); setResetOpen(false); addToast('System reset to demo data', 'warning') }}>Reset Everything</Button>
+            <Button variant="danger" onClick={() => { resetSystem(); setResetOpen(false); addToast(DEMO ? 'System reset to demo data' : 'System reset — all data cleared', 'warning') }}>Reset Everything</Button>
           </>
         }
       >

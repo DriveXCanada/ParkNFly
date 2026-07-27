@@ -5,6 +5,13 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { Logo } from '../../components/shared/Logo'
 import { Button } from '../../components/shared/Button'
 import { DEMO_CREDENTIALS } from '../../data/mockAccounts'
+import { DEMO, BOOTSTRAP_OWNER } from '../../config'
+
+// In demo mode show the sample logins; in the clean build show only the
+// first-run bootstrap owner credential.
+const CREDS = DEMO
+  ? DEMO_CREDENTIALS
+  : [{ label: 'Owner (first login)', email: BOOTSTRAP_OWNER.email, password: BOOTSTRAP_OWNER.password }]
 
 export default function Login() {
   const navigate = useNavigate()
@@ -75,18 +82,18 @@ export default function Login() {
             Sign In
           </Button>
 
-          {/* Demo credentials (simulated auth) */}
-          <div className="mt-5 rounded-xl bg-offwhite p-3">
+          {/* Credentials helper (simulated auth) */}
+          <div className="mt-5 rounded-xl bg-white/5 p-3">
             <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-graytext">
-              <ShieldCheck size={13} /> Demo credentials
+              <ShieldCheck size={13} /> {DEMO ? 'Demo credentials' : 'First-time login'}
             </div>
             <div className="mt-2 space-y-1.5">
-              {DEMO_CREDENTIALS.map((c) => (
+              {CREDS.map((c) => (
                 <button
                   key={c.email}
                   type="button"
                   onClick={() => quickFill(c)}
-                  className="flex w-full items-center justify-between rounded-lg bg-surface px-3 py-2 text-left text-xs hover:bg-green-light"
+                  className="flex w-full items-center justify-between rounded-lg bg-surface px-3 py-2 text-left text-xs hover:bg-brand/15"
                 >
                   <span className="font-bold text-white">{c.label}</span>
                   <span className="tabular text-graytext">{c.email} · {c.password}</span>
@@ -94,8 +101,9 @@ export default function Login() {
               ))}
             </div>
             <p className="mt-2 text-[11px] leading-snug text-graytext">
-              Simulated login for the prototype — not secure. Real authentication arrives with the
-              Airtable backend.
+              {DEMO
+                ? 'Simulated login for the prototype — not secure. Real authentication arrives with the backend.'
+                : 'Simulated login — change the bootstrap owner credentials in src/config.js before launch. Real auth arrives with the backend.'}
             </p>
           </div>
         </form>

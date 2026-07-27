@@ -1,97 +1,59 @@
-# ShuttleLog — Park'N Fly Halifax Edition
+# Park N Fly — Driver & Vehicle Tracker (by Drivex)
 
-A full-stack **concept / prototype** for shuttle trip logging and fleet operations
-at Park'N Fly Halifax (YHZ). Built to communicate the complete product vision to
-stakeholders and to the developers who will later wire it to an **Airtable** backend.
+A dark-themed, mobile-first driver/vehicle operations tracker for Park N Fly,
+built by **Drivex**. Two interfaces:
 
-> All data is mock/seed data held in a Zustand store — there is **no backend yet**.
-> Every point where a real Airtable API call will go is marked with an
-> `// AIRTABLE:` comment.
+- **Driver app** (`/driver`) — tablet-optimized: shift start, pre-trip
+  inspection, trip logging, breaks, incidents, fuel, end-of-shift PDF.
+- **Manager dashboard** (`/manager`) — login-gated: live fleet, trips,
+  fleet & fuel, staff, incidents, alerts/maintenance, reports, settings.
+  Owner tier manages locations & manager accounts.
 
-## Two interfaces
+State persists in the browser (localStorage), structured to move onto a real
+backend later (every integration point is tagged `// AIRTABLE:`).
 
-| Interface | Route | Optimized for | Purpose |
-|-----------|-------|---------------|---------|
-| **Driver App** | `/driver` | Tablet (768px) | In-bus trip logging, pre-trip inspections, end-of-shift PDF reports |
-| **Manager Dashboard** | `/manager` | Desktop (1280px+) | Live fleet status, trip history, driver roster, analytics, PDF reports |
+## Demo vs. clean (blank) mode
 
-A landing page at `/` lets you jump into either interface.
+A single build flag controls whether the app ships with sample data:
 
-## Getting started
+| `VITE_DEMO` | Behavior |
+|-------------|----------|
+| _unset / `false`_ (default) | **Clean, empty system** — no sample data. Just a bootstrap owner login + the inspection checklist. Ready to onboard real locations, staff, and vehicles. |
+| `true` | **Demo mode** — seeds sample drivers, vehicles, 14 days of shifts, inspections, and incidents for client showcases. |
+
+**First-time login (clean mode):** `owner@parknfly.ca` / `changeme`
+→ change these in [`src/config.js`](src/config.js) (`BOOTSTRAP_OWNER`) before launch.
+
+## Local development
 
 ```bash
 npm install
-npm run dev
+npm run dev          # clean/blank system
+VITE_DEMO=true npm run dev   # with demo data
 ```
 
-Then open:
-- `http://localhost:5173/driver` — Driver tablet app
-- `http://localhost:5173/manager` — Manager dashboard
+Open `http://localhost:5173/driver` or `/manager`.
 
-```bash
-npm run build    # production build
-npm run preview  # preview the production build
-```
+## Deploy on Railway
 
-## Tech stack
+This repo includes `railway.json`. On Railway:
 
-- **React** (Vite) + **React Router v6**
-- **Tailwind CSS** (brand design system in `tailwind.config.js` / `src/index.css`)
-- **Zustand** for state (`src/store/`) — simulates what Airtable will provide
-- **Recharts** for dashboard charts
-- **jsPDF** + **jsPDF-AutoTable** for PDF report generation (`src/utils/pdfGenerator.js`)
-- **Lucide React** for icons
+1. **New Project → Deploy from GitHub repo** → select `DriveXCanada/ParkNFly`.
+2. Railway auto-detects Node/Nixpacks and uses:
+   - Build: `npm run build`
+   - Start: `npx serve -s dist -l $PORT` (SPA fallback included)
+3. (Optional) leave `VITE_DEMO` unset for the clean system, or set it to
+   `true` under **Variables** for a demo instance.
+4. Deploy → Railway gives you a public URL.
 
-## Project structure
+> The app is a static SPA served by `serve`; `serve -s` handles client-side
+> routes (`/driver`, `/manager`, …) so deep links work.
 
-```
-src/
-  components/
-    driver/    DriverLayout (bottom tab bar)
-    manager/   ManagerLayout (collapsible sidebar)
-    shared/    Button, Badge, Card, Modal, SlideOver, Toast, KpiCard,
-               DataTable, BigButton, PassengerCounter, InspectionToggle,
-               TripStatusStrip, VehicleCard, DriverAvatar, ProgressBar, Logo …
-  pages/
-    driver/    DriverApp, TripLog, Inspection, DriverTrips, EndShift
-    manager/   Dashboard, Trips, Fleet, Drivers, DriverDetail, Reports, Settings
-  store/       useShiftStore (driver), useManagerStore, useToastStore
-  data/        mockDrivers, mockVehicles, mockShifts, mockInspections, inspectionItems
-  utils/       formatters, status, analytics, pdfGenerator
-  hooks/       useFakeLoad (simulated API delay)
-```
+## Tech
 
-## Driver flow
-
-1. **Start shift** — pick driver, vehicle, odometer start (warns if the vehicle's
-   last inspection is >24 h old or failed).
-2. **Pre-trip inspection** — 28-item grouped checklist (pass/fail), fuel level,
-   notes, typed signature, live progress bar.
-3. **Trip log** — four-step cycle (Depart Lot → Arrive Airport → Depart Airport →
-   Arrive Lot). Steps unlock in order, each tap stamps the time; passenger counts
-   are captured each direction. Trips auto-save and the cycle resets.
-4. **End shift** — odometer end + auto-calculated distance, then export a
-   **Full Shift Report** or **Inspection Report** PDF.
-
-## Manager features
-
-- **Dashboard** — today's KPIs, live fleet cards, hourly trend chart
-  (today vs. yesterday vs. 7-day average), activity feed, quick actions.
-- **All Trips** — filterable 30-day table with a detail slide-over + PDF export.
-- **Fleet** — vehicle roster with inspection results, per-vehicle detail panel
-  (inspection history, failed-item callouts, editable maintenance notes).
-- **Drivers** — roster cards → driver detail with a 30-day bar chart and shift history.
-- **Reports** — Daily Shift, Fleet Inspection, and Operations Summary PDFs.
-- **Settings** — location config, inspection-checklist manager, notification
-  toggles, and an Airtable integration placeholder.
-
-## Airtable migration
-
-The seed data lives in `src/data/`. Each file carries a header comment naming its
-target Airtable table, and read/write points throughout the app are tagged with
-`// AIRTABLE:` comments describing the exact request and fields. Swap the mock
-imports for fetch hooks against the `ParkNFly_Halifax` base and the UI is unchanged.
+React (Vite) · React Router · Zustand · Tailwind · Recharts · jsPDF ·
+Lucide · vite-plugin-pwa (installable + offline).
 
 ---
 
-*ShuttleLog v1.0 Concept · Built for Park'N Fly Halifax · June 2026*
+*Park N Fly · Powered by Drivex — Built to run. Priced to grow.*

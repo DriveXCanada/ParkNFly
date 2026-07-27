@@ -1,13 +1,14 @@
 {
-  "name": "shuttlelog-parknfly",
+  "name": "parknfly-drivex",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "ShuttleLog — Park'N Fly Halifax shuttle trip logging & fleet management concept",
+  "description": "Park N Fly driver & vehicle tracker by Drivex",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "serve -s dist -l ${PORT:-3000}",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -18,6 +19,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
     "recharts": "^2.12.7",
+    "serve": "^14.2.3",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
