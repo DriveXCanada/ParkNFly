@@ -19,9 +19,9 @@ export const DEMO = import.meta.env.VITE_DEMO === 'true'
  */
 export const BOOTSTRAP_OWNER = {
   id: 'ACC-OWNER',
-  name: 'Owner',
-  email: 'owner@parknfly.ca',
+  name: 'DriveX',
+  email: 'Info@drivexcanada.com',
   role: 'owner',
   locationId: null,
-  password: 'changeme',
+  password: 'Test2026!',
 }
