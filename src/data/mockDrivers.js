@@ -1,10 +1,10 @@
 /**
  * MOCK DATA — ShuttleLog Halifax
- * Airtable Base: ParkNFly_Halifax
+ * Data store: Railway Postgres
  * Table: Drivers
- * Replace this file with: useFetchDrivers() hook → Airtable API
+ * Replace this file with: useFetchDrivers() hook → the backend API
  *
- * AIRTABLE: Replace with → GET /Drivers table
+ * BACKEND: Replace with → GET /Drivers table
  * Fields: Driver_ID, Full_Name, Initials, Status, Employee_ID,
  *         Location_ID, Manager_Notes
  *

@@ -1,10 +1,10 @@
 /**
  * MOCK DATA — ShuttleLog
- * Airtable Base: ParkNFly_Halifax
+ * Data store: Railway Postgres
  * Table: Locations
- * Replace this file with: useFetchLocations() hook → Airtable API
+ * Replace this file with: useFetchLocations() hook → the backend API
  *
- * AIRTABLE: Replace with → GET /Locations table
+ * BACKEND: Replace with → GET /Locations table
  * Fields: Location_ID, Name, Code, City, Province, Active
  *
  * Lot locations across the country. Drivers, vehicles, and staff are scoped

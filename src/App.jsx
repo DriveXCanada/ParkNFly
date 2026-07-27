@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ToastHost } from './components/shared/Toast'
 import { useAuthStore } from './store/useAuthStore'
+import { useManagerStore } from './store/useManagerStore'
 
 // Layouts
 import DriverLayout from './components/driver/DriverLayout'
@@ -45,7 +47,24 @@ function RequireOwner({ children }) {
   return children
 }
 
+// How often to re-pull shared state so devices converge (ms).
+const SYNC_POLL_MS = 25000
+
 export default function App() {
+  // Hydrate from the backend on load, then poll + refresh on focus so every
+  // logged-in device sees the same live data. No-ops when no backend is set.
+  useEffect(() => {
+    const { hydrate, refresh } = useManagerStore.getState()
+    hydrate()
+    const id = setInterval(() => refresh(), SYNC_POLL_MS)
+    const onFocus = () => refresh()
+    window.addEventListener('focus', onFocus)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [])
+
   return (
     <>
       <ToastHost />

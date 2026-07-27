@@ -160,26 +160,29 @@ export default function Settings() {
         </div>
       </Card>
 
-      {/* Airtable placeholder */}
-      <Card padded className="border-dashed border-2 border-line bg-white/5">
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface shadow-card">
-              <Database size={24} className="text-graytext" />
-            </div>
-            <div>
-              <h2 className="flex items-center gap-2 text-base font-extrabold text-white">
-                Airtable Integration
-                <span className="rounded-full bg-amber/15 px-2 py-0.5 text-xs font-bold text-amber">Coming Soon</span>
-              </h2>
-              <p className="mt-0.5 max-w-md text-sm text-graytext">
-                Connect ShuttleLog to the <span className="font-semibold">ParkNFly_Halifax</span> Airtable base to sync
-                locations, accounts, staff, vehicles, shifts, trips, inspections, and incidents in real time. This also
-                replaces the simulated login with real authentication.
-              </p>
-            </div>
+      {/* Cloud sync status */}
+      <Card padded className={store.synced ? 'border-green/30 bg-green-light' : 'border-dashed border-2 border-line bg-white/5'}>
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface shadow-card">
+            <Database size={24} className={store.synced ? 'text-green' : 'text-graytext'} />
           </div>
-          <Button variant="secondary" disabled>Connect Airtable</Button>
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-extrabold text-white">
+              Cloud Sync
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                  store.synced ? 'bg-green/15 text-green' : 'bg-amber/15 text-amber'
+                }`}
+              >
+                {store.synced ? 'Active' : 'Local-only'}
+              </span>
+            </h2>
+            <p className="mt-0.5 max-w-md text-sm text-graytext">
+              {store.synced
+                ? 'Data is stored in the cloud database and stays in sync across every signed-in device, updating automatically within seconds.'
+                : 'This device is not connected to the cloud database — data is stored on this device only. Connect the database on the server to enable cross-device sync.'}
+            </p>
+          </div>
         </div>
       </Card>
 

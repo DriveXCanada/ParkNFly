@@ -1,10 +1,10 @@
 /**
  * MOCK DATA — ShuttleLog
- * Airtable Base: ParkNFly_Halifax
+ * Data store: Railway Postgres
  * Table: Accounts (Owner + Managers)
- * Replace this file with: real authentication (Airtable + auth provider)
+ * Replace this file with: real authentication (a hashed-password auth provider)
  *
- * AIRTABLE: Replace with → GET /Accounts table + a real auth provider.
+ * BACKEND: Replace with → GET /Accounts table + a real auth provider.
  * Fields: Account_ID, Name, Email, Role, Location_ID, Password_Hash
  *
  * ⚠️ SIMULATED AUTH ONLY. Passwords are stored in plain text in the browser

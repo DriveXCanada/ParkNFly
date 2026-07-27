@@ -1,10 +1,10 @@
 /**
  * MOCK DATA — ShuttleLog Halifax
- * Airtable Base: ParkNFly_Halifax
+ * Data store: Railway Postgres
  * Table: Inspections
- * Replace this file with: useFetchInspections() hook → Airtable API
+ * Replace this file with: useFetchInspections() hook → the backend API
  *
- * AIRTABLE: Replace with → GET /Inspections table, filter by shiftId / vehicleId
+ * BACKEND: Replace with → GET /Inspections table, filter by shiftId / vehicleId
  * Fields: Inspection_ID, Shift_ID, Driver_ID, Vehicle_ID, Date, Time,
  *         Results (JSON of item_key -> pass/fail), Fuel_Level, Notes,
  *         Signature, Overall_Result

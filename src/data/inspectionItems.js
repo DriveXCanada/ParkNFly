@@ -1,10 +1,10 @@
 /**
  * MOCK DATA — ShuttleLog Halifax
- * Airtable Base: ParkNFly_Halifax
+ * Data store: Railway Postgres
  * Table: Inspection_Checklist_Items
- * Replace this file with: useFetchChecklist() hook → Airtable API
+ * Replace this file with: useFetchChecklist() hook → the backend API
  *
- * AIRTABLE: Replace with → GET /Inspection_Checklist_Items table
+ * BACKEND: Replace with → GET /Inspection_Checklist_Items table
  * Fields: Item_Key, Label, Category, Active, Critical
  *
  * The checklist is the canonical definition of every inspectable item.

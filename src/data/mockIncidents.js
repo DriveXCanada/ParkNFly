@@ -1,10 +1,10 @@
 /**
  * MOCK DATA — ShuttleLog
- * Airtable Base: ParkNFly_Halifax
+ * Data store: Railway Postgres
  * Table: Incidents
- * Replace this file with: useFetchIncidents() hook → Airtable API
+ * Replace this file with: useFetchIncidents() hook → the backend API
  *
- * AIRTABLE: Replace with → GET /Incidents table
+ * BACKEND: Replace with → GET /Incidents table
  * Fields: Incident_ID, Date, Time, Driver_ID, Vehicle_ID, Location_ID,
  *         Type, Severity, Description, Status, Reported_By, Manager_Notes,
  *         Created_At

@@ -1,10 +1,10 @@
 /**
  * MOCK DATA — ShuttleLog Halifax
- * Airtable Base: ParkNFly_Halifax
+ * Data store: Railway Postgres
  * Table: Vehicles
- * Replace this file with: useFetchVehicles() hook → Airtable API
+ * Replace this file with: useFetchVehicles() hook → the backend API
  *
- * AIRTABLE: Replace with → GET /Vehicles table
+ * BACKEND: Replace with → GET /Vehicles table
  * Fields: Vehicle_ID, Bus_Number, Make, Model, Year, Capacity,
  *         Status, Odometer, Last_Inspection_Date, Inspection_Result,
  *         Next_Service_Due, Maintenance_Notes

@@ -1,7 +1,7 @@
 /**
  * useShiftStore — current driver shift state (driver app).
  *
- * AIRTABLE: This entire store simulates the live shift record. On migration:
+ * BACKEND: This entire store simulates the live shift record. On migration:
  *   - startShift()      → POST /Shifts (create record), POST /Inspections placeholder
  *   - logStep()         → PATCH /Trips (update current trip leg timestamp)
  *   - completeTrip()    → POST /Trips (finalize trip record)

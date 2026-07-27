@@ -30,6 +30,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: '/index.html',
+        // Never let the SW serve the SPA shell for API calls.
+        navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
       },
@@ -38,5 +40,9 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    // Proxy API calls to the local backend during `npm run dev`.
+    proxy: {
+      '/api': 'http://localhost:3000',
+    },
   },
 })

@@ -1,8 +1,8 @@
 /**
  * pdfGenerator.js — jsPDF report generators for ShuttleLog.
  *
- * AIRTABLE: report payloads are assembled from the mock stores today. After
- * migration, the same builder functions receive records fetched from Airtable
+ * BACKEND: report payloads are assembled from the mock stores today. After
+ * migration, the same builder functions receive records fetched from the backend
  * (Shifts, Trips, Inspections, Vehicles, Drivers) — only the data source
  * changes, the layout code stays identical.
  */
