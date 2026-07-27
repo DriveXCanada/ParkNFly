@@ -348,6 +348,8 @@ async function initDb() {
   console.log('Postgres schema ready.')
 }
 
-initDb()
-  .catch((e) => console.error('DB init failed (serving app anyway):', e))
-  .finally(() => app.listen(PORT, () => console.log(`Park N Fly listening on ${PORT} (db=${configured()})`)))
+// Bind immediately so the platform healthcheck passes right away, then
+// initialize the database in the background (schema + owner seed). A request
+// that lands before init finishes simply retries on the client.
+app.listen(PORT, () => console.log(`Park N Fly listening on ${PORT} (db=${configured()})`))
+initDb().catch((e) => console.error('DB init failed (serving app anyway):', e))
