@@ -3,6 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { ToastHost } from './components/shared/Toast'
 import { useAuthStore } from './store/useAuthStore'
 import { useManagerStore } from './store/useManagerStore'
+import { useShiftStore } from './store/useShiftStore'
+import { Logo } from './components/shared/Logo'
+import KioskUnlock from './pages/driver/KioskUnlock'
 
 // Layouts
 import DriverLayout from './components/driver/DriverLayout'
@@ -32,18 +35,44 @@ import Managers from './pages/manager/admin/Managers'
 
 import Landing from './pages/Landing'
 
-// Simple auth guard for the manager/owner area (simulated auth).
+// Full-screen loader shown while the session is being restored, so guards
+// don't flash a redirect before we know whether a session exists.
+function Splash() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-ink">
+      <div className="animate-pulse"><Logo size={40} dark /></div>
+    </div>
+  )
+}
+
+// Auth guard for the manager/owner area. Authorization is enforced server-side;
+// this is UX routing only.
 function RequireAuth({ children }) {
+  const sessionReady = useAuthStore((s) => s.sessionReady)
   const currentUser = useAuthStore((s) => s.currentUser)
+  if (!sessionReady) return <Splash />
   if (!currentUser) return <Navigate to="/manager/login" replace />
   return children
 }
 
 // Owner-only guard.
 function RequireOwner({ children }) {
+  const sessionReady = useAuthStore((s) => s.sessionReady)
   const currentUser = useAuthStore((s) => s.currentUser)
+  if (!sessionReady) return <Splash />
   if (!currentUser) return <Navigate to="/manager/login" replace />
   if (currentUser.role !== 'owner') return <Navigate to="/manager" replace />
+  return children
+}
+
+// Driver tablet gate: when a backend is configured, the tablet must have a
+// session (kiosk or a signed-in manager) before it can read/write data.
+function RequireKiosk({ children }) {
+  const sessionReady = useAuthStore((s) => s.sessionReady)
+  const sessionRole = useAuthStore((s) => s.sessionRole)
+  const backendConfigured = useAuthStore((s) => s.backendConfigured)
+  if (!sessionReady) return <Splash />
+  if (backendConfigured && !sessionRole) return <KioskUnlock />
   return children
 }
 
@@ -51,17 +80,20 @@ function RequireOwner({ children }) {
 const SYNC_POLL_MS = 25000
 
 export default function App() {
-  // Hydrate from the backend on load, then poll + refresh on focus so every
-  // logged-in device sees the same live data. No-ops when no backend is set.
+  // Restore the session on load, then poll + refresh on focus so every
+  // signed-in device sees the same live data. Polling is skipped while a driver
+  // shift is in progress so a background pull can't disrupt live shift entry.
   useEffect(() => {
-    const { hydrate, refresh } = useManagerStore.getState()
-    hydrate()
-    const id = setInterval(() => refresh(), SYNC_POLL_MS)
-    const onFocus = () => refresh()
-    window.addEventListener('focus', onFocus)
+    useAuthStore.getState().initSession()
+    const maybeRefresh = () => {
+      if (useShiftStore.getState().shiftStarted) return
+      useManagerStore.getState().refresh()
+    }
+    const id = setInterval(maybeRefresh, SYNC_POLL_MS)
+    window.addEventListener('focus', maybeRefresh)
     return () => {
       clearInterval(id)
-      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('focus', maybeRefresh)
     }
   }, [])
 
@@ -71,8 +103,8 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
 
-        {/* Driver app (tablet) */}
-        <Route path="/driver" element={<DriverLayout />}>
+        {/* Driver app (tablet) — gated by a kiosk session when synced */}
+        <Route path="/driver" element={<RequireKiosk><DriverLayout /></RequireKiosk>}>
           <Route index element={<DriverApp />} />
           <Route path="log" element={<TripLog />} />
           <Route path="inspection" element={<Inspection />} />

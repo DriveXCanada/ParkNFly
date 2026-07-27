@@ -5,13 +5,11 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { Logo } from '../../components/shared/Logo'
 import { Button } from '../../components/shared/Button'
 import { DEMO_CREDENTIALS } from '../../data/mockAccounts'
-import { DEMO, BOOTSTRAP_OWNER } from '../../config'
+import { DEMO } from '../../config'
 
-// In demo mode show the sample logins; in the clean build show only the
-// first-run bootstrap owner credential.
-const CREDS = DEMO
-  ? DEMO_CREDENTIALS
-  : [{ label: 'Owner (first login)', email: BOOTSTRAP_OWNER.email, password: BOOTSTRAP_OWNER.password }]
+// In demo mode show the sample logins for convenience. In the clean/production
+// build we never render real credentials on the login screen.
+const CREDS = DEMO ? DEMO_CREDENTIALS : []
 
 export default function Login() {
   const navigate = useNavigate()
@@ -82,30 +80,30 @@ export default function Login() {
             Sign In
           </Button>
 
-          {/* Credentials helper (simulated auth) */}
-          <div className="mt-5 rounded-xl bg-white/5 p-3">
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-graytext">
-              <ShieldCheck size={13} /> {DEMO ? 'Demo credentials' : 'First-time login'}
+          {/* Demo credentials helper — only in the showcase build, never prod */}
+          {DEMO && CREDS.length > 0 && (
+            <div className="mt-5 rounded-xl bg-white/5 p-3">
+              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-graytext">
+                <ShieldCheck size={13} /> Demo credentials
+              </div>
+              <div className="mt-2 space-y-1.5">
+                {CREDS.map((c) => (
+                  <button
+                    key={c.email}
+                    type="button"
+                    onClick={() => quickFill(c)}
+                    className="flex w-full items-center justify-between rounded-lg bg-surface px-3 py-2 text-left text-xs hover:bg-brand/15"
+                  >
+                    <span className="font-bold text-white">{c.label}</span>
+                    <span className="tabular text-graytext">{c.email} · {c.password}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] leading-snug text-graytext">
+                Sample logins for the showcase build only.
+              </p>
             </div>
-            <div className="mt-2 space-y-1.5">
-              {CREDS.map((c) => (
-                <button
-                  key={c.email}
-                  type="button"
-                  onClick={() => quickFill(c)}
-                  className="flex w-full items-center justify-between rounded-lg bg-surface px-3 py-2 text-left text-xs hover:bg-brand/15"
-                >
-                  <span className="font-bold text-white">{c.label}</span>
-                  <span className="tabular text-graytext">{c.email} · {c.password}</span>
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] leading-snug text-graytext">
-              {DEMO
-                ? 'Simulated login for the prototype — not secure. Real authentication arrives with the backend.'
-                : 'Simulated login — change the bootstrap owner credentials in src/config.js before launch. Real auth arrives with the backend.'}
-            </p>
-          </div>
+          )}
         </form>
 
         <div className="mt-4 text-center">

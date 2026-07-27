@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { mockDrivers, initialsFromName } from '../data/mockDrivers'
 import { mockVehicles } from '../data/mockVehicles'
 import { mockShifts, flattenTrips, REFERENCE_TODAY } from '../data/mockShifts'
@@ -22,8 +22,12 @@ import { mockIncidents } from '../data/mockIncidents'
 import { inspectionGroups, defaultCriticalItems } from '../data/inspectionItems'
 import { todayKey } from '../utils/formatters'
 import { DEMO, BOOTSTRAP_OWNER } from '../config'
-import { getBootstrap } from '../api/client'
-import { setSyncEnabled, isSyncEnabled, syncCreate, syncUpdate, syncDelete, syncConfig } from './sync'
+import { getBootstrap, resetSystemRequest } from '../api/client'
+import { useToastStore } from './useToastStore'
+import {
+  setSyncEnabled, isSyncEnabled, syncCreate, syncUpdate, syncDelete, syncConfig,
+  syncCommitShift, flush, pendingOverlay,
+} from './sync'
 
 // Collections that mirror to the backend (state keys === API collection names).
 const SYNC_COLLECTIONS = ['locations', 'accounts', 'drivers', 'vehicles', 'shifts', 'inspections', 'incidents']
@@ -91,18 +95,30 @@ export const useManagerStore = create(
       synced: false,
 
       // ---- Backend sync (Railway Postgres) ---------------------------------
-      // Adopt a fresh snapshot from the server into local state.
+      // Adopt a server snapshot, but overlay any records still queued locally
+      // (offline writes) so a refresh never drops a shift the server hasn't
+      // received yet.
       _applyServer: (data) => {
         const cfg = data.config || {}
+        const overlay = pendingOverlay()
+        const merge = (collection, serverList) => {
+          const list = [...(serverList || [])]
+          const seen = new Set(list.map((r) => r.id))
+          for (const rec of overlay[collection] || []) {
+            if (!seen.has(rec.id)) list.push(rec)
+          }
+          return list
+        }
+        const shifts = merge('shifts', data.shifts)
         set({
-          locations: data.locations || [],
+          locations: merge('locations', data.locations),
           accounts: data.accounts || [],
-          drivers: data.drivers || [],
-          vehicles: data.vehicles || [],
-          shifts: data.shifts || [],
-          inspections: data.inspections || [],
-          incidents: data.incidents || [],
-          trips: flattenTrips(data.shifts || []),
+          drivers: merge('drivers', data.drivers),
+          vehicles: merge('vehicles', data.vehicles),
+          shifts,
+          inspections: merge('inspections', data.inspections),
+          incidents: merge('incidents', data.incidents),
+          trips: flattenTrips(shifts),
           ...(cfg.settings ? { settings: cfg.settings } : {}),
           ...(cfg.checklist ? { checklist: cfg.checklist } : {}),
           ...(cfg.criticalItems ? { criticalItems: cfg.criticalItems } : {}),
@@ -111,10 +127,9 @@ export const useManagerStore = create(
         })
       },
 
-      // First load: detect the backend, then either adopt server data or, on a
-      // fresh/empty database, push the current local seed up (also migrates any
-      // pre-sync local data to the shared DB). Safe to call when no backend
-      // exists — it just disables sync and the app stays local-only.
+      // First load: detect the backend, adopt server data, ensure config
+      // defaults exist server-side, and replay any queued offline writes. Safe
+      // to call with no backend — it just disables sync (local-only mode).
       hydrate: async () => {
         let data
         try {
@@ -131,25 +146,25 @@ export const useManagerStore = create(
         }
         setSyncEnabled(true)
         set({ synced: true })
-        const serverEmpty = !(data.accounts && data.accounts.length)
-        if (serverEmpty) {
-          const s = get()
-          for (const table of SYNC_COLLECTIONS) {
-            for (const rec of s[table] || []) syncCreate(table, rec)
-          }
-          syncConfig('settings', s.settings)
-          syncConfig('checklist', s.checklist)
-          syncConfig('criticalItems', s.criticalItems)
-          syncConfig('reportTimestamps', s.reportTimestamps)
-          return true
-        }
         get()._applyServer(data)
+
+        // Seed any config rows the server doesn't have yet (defaults live in the
+        // frontend; the owner account is seeded server-side).
+        const s = get()
+        const cfg = data.config || {}
+        if (!cfg.settings) syncConfig('settings', s.settings)
+        if (!cfg.checklist) syncConfig('checklist', s.checklist)
+        if (!cfg.criticalItems) syncConfig('criticalItems', s.criticalItems)
+        if (!cfg.reportTimestamps) syncConfig('reportTimestamps', s.reportTimestamps)
+
+        flush() // replay anything queued while offline
         return true
       },
 
       // Poll/focus refresh so devices converge on the shared state.
       refresh: async () => {
         if (!isSyncEnabled()) return
+        flush() // opportunistically drain the outbox
         try {
           const data = await getBootstrap()
           if (data && data.configured) get()._applyServer(data)
@@ -358,11 +373,15 @@ export const useManagerStore = create(
           _autoDown: { autoDown, downReason, vehicleId: shift.vehicleId },
         })
 
-        // Persist to the shared backend.
-        syncCreate('shifts', shift)
-        if (inspection) syncCreate('inspections', inspection)
-        if (vehiclePatch) syncUpdate('vehicles', shift.vehicleId, vehiclePatch)
-        for (const inc of newIncidentRecords) syncCreate('incidents', inc)
+        // Persist atomically — one transaction so a critically-failed bus can't
+        // stay "active" if only part of the write lands.
+        syncCommitShift({
+          shift,
+          inspection: inspection || null,
+          incidents: newIncidentRecords,
+          vehicleId: vehiclePatch ? shift.vehicleId : null,
+          vehiclePatch: vehiclePatch || null,
+        })
       },
 
       // ---- Settings / misc -------------------------------------------------
@@ -394,13 +413,38 @@ export const useManagerStore = create(
           return { reportTimestamps }
         }),
 
-      // Wipe LOCAL data and re-seed from the mock files. Does not clear the
-      // shared server; the next refresh re-adopts server state.
-      resetSystem: () => set({ ...seed() }),
+      // Clear operational data. When synced, also clears it on the server
+      // (owner-only) so the reset is real across devices; otherwise local-only.
+      resetSystem: async () => {
+        if (isSyncEnabled()) {
+          try {
+            await resetSystemRequest()
+          } catch {
+            useToastStore.getState().addToast('Could not clear server data — try again.', 'warning')
+            return false
+          }
+        }
+        set({ ...seed() })
+        return true
+      },
     }),
     {
       name: DEMO ? 'shuttlelog-manager' : 'parknfly-manager',
       version: 4,
+      // Guard against localStorage quota errors (e.g. many inspection photos):
+      // a failed write is swallowed so the app never crashes — in-memory state
+      // stands and the server remains the source of truth.
+      storage: createJSONStorage(() => ({
+        getItem: (k) => {
+          try { return localStorage.getItem(k) } catch { return null }
+        },
+        setItem: (k, v) => {
+          try { localStorage.setItem(k, v) } catch { /* quota exceeded — skip */ }
+        },
+        removeItem: (k) => {
+          try { localStorage.removeItem(k) } catch { /* ignore */ }
+        },
+      })),
       // In live (blank) mode, always track the real current date rather than
       // freezing referenceToday at first-load.
       merge: (persisted, current) => {

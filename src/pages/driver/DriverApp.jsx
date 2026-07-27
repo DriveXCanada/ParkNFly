@@ -7,6 +7,7 @@ import { useToastStore } from '../../store/useToastStore'
 import { Button } from '../../components/shared/Button'
 import { Card } from '../../components/shared/Card'
 import { formatDate, hoursSince, todayKey } from '../../utils/formatters'
+import { DEMO } from '../../config'
 
 export default function DriverApp() {
   const navigate = useNavigate()
@@ -17,6 +18,9 @@ export default function DriverApp() {
   const locations = useManagerStore((s) => s.locations)
   const allDrivers = useManagerStore((s) => s.drivers)
   const allVehicles = useManagerStore((s) => s.vehicles)
+  // In the demo build the dashboard is anchored to a frozen date, so stamp
+  // live shifts with it too, otherwise they wouldn't show as "today".
+  const referenceToday = useManagerStore((s) => s.referenceToday)
 
   const activeLocations = locations.filter((l) => l.active)
   const [locationId, setLocationId] = useState(activeLocations[0]?.id || '')
@@ -74,7 +78,7 @@ export default function DriverApp() {
 
   const handleStart = () => {
     if (!validate()) return
-    startShift({ driverId, vehicleId, locationId, shiftDate: todayKey(), odoStart: Number(odoStart) })
+    startShift({ driverId, vehicleId, locationId, shiftDate: DEMO ? referenceToday : todayKey(), odoStart: Number(odoStart) })
     addToast('Shift started — drive safe!', 'success')
     navigate('/driver/inspection')
   }
@@ -191,12 +195,16 @@ export default function DriverApp() {
 }
 
 function Field({ label, icon: Icon, error, children }) {
+  // Control nested inside <label> so it's programmatically associated (screen
+  // readers announce it; tapping the label focuses the input).
   return (
     <div>
-      <label className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-white">
-        {Icon && <Icon size={15} className="text-graytext" />} {label}
+      <label className="block">
+        <span className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-white">
+          {Icon && <Icon size={15} className="text-graytext" />} {label}
+        </span>
+        {children}
       </label>
-      {children}
       {error && <p className="mt-1 text-xs font-semibold text-danger">{error}</p>}
     </div>
   )

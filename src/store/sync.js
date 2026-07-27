@@ -1,52 +1,155 @@
 /**
- * Write-through sync helpers.
+ * Write-through sync with a durable offline outbox.
  *
- * The manager store updates local state optimistically (instant UX) and then
- * calls these to persist the change to the backend. They are fire-and-forget:
- * on failure the local change stands and the user gets a soft warning, so a
- * dropped network request never breaks the app — it just won't have synced.
+ * Every mutation updates local state optimistically and is mirrored to the
+ * backend. If a write can't reach the server (offline / transient), it is
+ * persisted to an outbox in localStorage and replayed automatically on
+ * reconnect — so a shift ended in a dead-zone is never lost. Permanent
+ * failures (validation/forbidden) are dropped with a warning rather than
+ * retried forever.
  *
- * When sync is disabled (no backend / no DATABASE_URL), every helper is a
- * no-op, so the app behaves exactly like the original local-only version.
+ * `pendingOverlay()` lets the store keep unacknowledged local records visible
+ * even when a background refresh pulls a server snapshot that predates them.
+ *
+ * When sync is disabled (no backend / not signed in) every helper is a no-op.
  */
 
-import { createRecord, updateRecord, deleteRecord, putConfig } from '../api/client'
+import {
+  ApiError, createRecord, updateRecord, deleteRecord, putConfig, commitShiftRequest,
+} from '../api/client'
 import { useToastStore } from './useToastStore'
 
+const OUTBOX_KEY = 'pnf-outbox'
+
 let enabled = false
-export const setSyncEnabled = (v) => {
-  enabled = !!v
-}
+export const setSyncEnabled = (v) => { enabled = !!v }
 export const isSyncEnabled = () => enabled
 
-let warnedOnce = false
-function warn() {
-  // Only nag once per session so a flaky connection isn't a toast storm.
-  if (warnedOnce) return
-  warnedOnce = true
+// ---- Outbox persistence ---------------------------------------------------
+function loadOutbox() {
   try {
-    useToastStore.getState().addToast('Saved on this device, but syncing to the server failed.', 'warning')
+    return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]')
   } catch {
-    /* toast store unavailable — ignore */
+    return []
+  }
+}
+function saveOutbox(items) {
+  try {
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify(items))
+  } catch {
+    /* quota — best effort */
+  }
+}
+let outbox = loadOutbox()
+const persist = () => saveOutbox(outbox)
+const uid = () => `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`
+
+export const hasPending = () => outbox.length > 0
+
+let warnedOffline = false
+function warnOffline() {
+  if (warnedOffline) return
+  warnedOffline = true
+  try {
+    useToastStore.getState().addToast('Offline — changes are saved on this device and will sync when you reconnect.', 'warning')
+  } catch { /* ignore */ }
+}
+function warnDropped() {
+  try {
+    useToastStore.getState().addToast("A change couldn't be saved to the server and was skipped.", 'warning')
+  } catch { /* ignore */ }
+}
+
+// Send one outbox item. Returns 'ok' | 'retry' (keep) | 'drop' (discard).
+async function send(item) {
+  try {
+    if (item.kind === 'create') await createRecord(item.collection, item.payload)
+    else if (item.kind === 'update') await updateRecord(item.collection, item.payload.id, item.payload.patch)
+    else if (item.kind === 'delete') await deleteRecord(item.collection, item.payload.id)
+    else if (item.kind === 'config') await putConfig(item.payload.key, item.payload.value)
+    else if (item.kind === 'commit') await commitShiftRequest(item.payload)
+    return 'ok'
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 0) return 'retry' // offline / unreachable
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) return 'retry' // needs re-auth; keep
+    if (e instanceof ApiError && e.status >= 500) return 'retry' // transient server error
+    return 'drop' // 4xx validation etc. — won't succeed on retry
   }
 }
 
+let flushing = false
+export async function flush() {
+  if (!enabled || flushing || !outbox.length) return
+  flushing = true
+  try {
+    while (outbox.length) {
+      const item = outbox[0]
+      const result = await send(item)
+      if (result === 'retry') break // stop; try again later
+      if (result === 'drop') warnDropped()
+      outbox.shift()
+      persist()
+    }
+    if (!outbox.length) warnedOffline = false
+  } finally {
+    flushing = false
+  }
+}
+
+function enqueue(item) {
+  outbox.push({ ...item, _id: uid() })
+  persist()
+  warnOffline()
+}
+
+// Try immediately; on failure, decide keep-vs-drop like flush().
+async function attempt(item) {
+  if (!enabled) return
+  const result = await send(item)
+  if (result === 'retry') enqueue(item)
+  else if (result === 'drop') warnDropped()
+}
+
+// ---- Public write-through helpers -----------------------------------------
 export function syncCreate(collection, record) {
-  if (!enabled) return
-  createRecord(collection, record).catch(warn)
+  attempt({ kind: 'create', collection, payload: record })
 }
-
 export function syncUpdate(collection, id, patch) {
-  if (!enabled) return
-  updateRecord(collection, id, patch).catch(warn)
+  attempt({ kind: 'update', collection, payload: { id, patch } })
 }
-
 export function syncDelete(collection, id) {
-  if (!enabled) return
-  deleteRecord(collection, id).catch(warn)
+  attempt({ kind: 'delete', collection, payload: { id } })
+}
+export function syncConfig(key, value) {
+  attempt({ kind: 'config', payload: { key, value } })
+}
+export function syncCommitShift(payload) {
+  attempt({ kind: 'commit', payload })
 }
 
-export function syncConfig(key, value) {
-  if (!enabled) return
-  putConfig(key, value).catch(warn)
+/**
+ * Records still waiting to reach the server, grouped by collection, so a
+ * background refresh doesn't drop them. Includes queued creates and the
+ * shift/inspection/incidents inside a queued commit.
+ */
+export function pendingOverlay() {
+  const out = {}
+  const add = (collection, rec) => {
+    if (!rec || typeof rec.id !== 'string') return
+    ;(out[collection] ||= []).push(rec)
+  }
+  for (const item of outbox) {
+    if (item.kind === 'create') add(item.collection, item.payload)
+    else if (item.kind === 'commit') {
+      add('shifts', item.payload.shift)
+      if (item.payload.inspection) add('inspections', item.payload.inspection)
+      for (const inc of item.payload.incidents || []) add('incidents', inc)
+    }
+  }
+  return out
+}
+
+// Replay whenever connectivity returns.
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => { flush() })
 }

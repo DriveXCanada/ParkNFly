@@ -116,9 +116,9 @@ export default function Managers() {
 
 function Field({ label, children }) {
   return (
-    <div>
-      <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-graytext">{label}</label>
+    <label className="block">
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-graytext">{label}</span>
       {children}
-    </div>
+    </label>
   )
 }

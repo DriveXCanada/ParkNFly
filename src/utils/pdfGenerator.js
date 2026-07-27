@@ -176,7 +176,7 @@ export function generateShiftReport({ shift, inspection, driver, vehicle }) {
 
   const trips = shift?.trips || []
   const totals = tripTotals(trips)
-  const km = shift?.odoEnd && shift?.odoStart ? shift.odoEnd - shift.odoStart : null
+  const km = shift?.odoEnd != null && shift?.odoStart != null ? shift.odoEnd - shift.odoStart : null
   const dur = minutesBetween(shift?.startTime, shift?.endTime)
 
   y = drawInfoBlock(

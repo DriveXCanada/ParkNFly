@@ -119,9 +119,9 @@ function Stat({ label, value }) {
 
 function Field({ label, children, full }) {
   return (
-    <div className={full ? 'col-span-2' : ''}>
-      <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-graytext">{label}</label>
+    <label className={`block ${full ? 'col-span-2' : ''}`}>
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-graytext">{label}</span>
       {children}
-    </div>
+    </label>
   )
 }
