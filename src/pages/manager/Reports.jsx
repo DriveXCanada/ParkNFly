@@ -204,9 +204,9 @@ function ReportCard({ icon: Icon, title, description, includes, lastGenerated, c
 
 function Field({ label, children }) {
   return (
-    <div>
-      <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-graytext">{label}</label>
+    <label className="block">
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-graytext">{label}</span>
       {children}
-    </div>
+    </label>
   )
 }

@@ -8,6 +8,7 @@ import { Card } from '../../components/shared/Card'
 import { Button } from '../../components/shared/Button'
 import { Modal } from '../../components/shared/Modal'
 import { ParkNFlyMark } from '../../components/shared/Logo'
+import ChangePassword from '../../components/manager/ChangePassword'
 import { inspectionGroups } from '../../data/inspectionItems'
 import { DEMO } from '../../config'
 
@@ -80,6 +81,9 @@ export default function Settings() {
           <h2 className="flex items-center gap-2 text-base font-extrabold text-white">
             <Bell size={18} className="text-green" /> Notification Preferences
           </h2>
+          <p className="mt-1 text-xs text-graytext">
+            Choose which alerts you want. Delivery (email &amp; SMS) is not yet connected — these preferences are saved and will take effect once messaging is enabled.
+          </p>
           <div className="mt-4 space-y-1">
             {Object.entries(NOTIFICATION_LABELS).map(([key, label]) => (
               <div key={key} className="flex items-center justify-between py-2">
@@ -160,6 +164,9 @@ export default function Settings() {
         </div>
       </Card>
 
+      {/* Account security */}
+      <ChangePassword />
+
       {/* Cloud sync status */}
       <Card padded className={store.synced ? 'border-green/30 bg-green-light' : 'border-dashed border-2 border-line bg-white/5'}>
         <div className="flex items-center gap-4">
@@ -195,7 +202,7 @@ export default function Settings() {
           <p className="mt-1 text-sm text-graytext">
             {DEMO
               ? "Wipes everything you've added from this browser and restores the original demo dataset. Cannot be undone."
-              : "Wipes all data (locations, managers, staff, vehicles, incidents, shifts, notes) from this browser and returns the system to empty. Cannot be undone."}
+              : "Clears all operational data (locations, staff, vehicles, shifts, inspections, incidents) — across every device when cloud sync is on. Manager accounts are kept. Cannot be undone."}
           </p>
           <Button className="mt-3" variant="danger" icon={RotateCcw} onClick={() => setResetOpen(true)}>
             {DEMO ? 'Reset to Demo Data' : 'Reset System (Clear All)'}
@@ -215,7 +222,7 @@ export default function Settings() {
         footer={
           <>
             <Button variant="secondary" onClick={() => setResetOpen(false)}>Cancel</Button>
-            <Button variant="danger" onClick={() => { resetSystem(); setResetOpen(false); addToast(DEMO ? 'System reset to demo data' : 'System reset — all data cleared', 'warning') }}>Reset Everything</Button>
+            <Button variant="danger" onClick={async () => { const ok = await resetSystem(); setResetOpen(false); if (ok !== false) addToast(DEMO ? 'System reset to demo data' : 'System reset — all data cleared', 'warning') }}>Reset Everything</Button>
           </>
         }
       >

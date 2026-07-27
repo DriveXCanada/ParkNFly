@@ -41,3 +41,46 @@ export const DDL = [
 ]
 
 export const isCollection = (t) => COLLECTIONS.includes(t)
+
+// Fields a client is allowed to write per collection. Anything else in a
+// request body is dropped, so a caller can't inject e.g. an unexpected field.
+export const WRITABLE = {
+  locations: ['id', 'name', 'code', 'city', 'province', 'active'],
+  accounts: ['id', 'name', 'email', 'password', 'role', 'locationId'],
+  drivers: ['id', 'name', 'initials', 'employeeId', 'status', 'locationId', 'notes'],
+  vehicles: [
+    'id', 'busNum', 'make', 'model', 'year', 'capacity', 'odometer', 'status',
+    'lastInspection', 'inspectionResult', 'nextServiceDue', 'maintenanceNotes',
+    'locationId', 'downReason',
+  ],
+  shifts: [
+    'id', 'driverId', 'vehicleId', 'locationId', 'date', 'startTime', 'endTime',
+    'odoStart', 'odoEnd', 'fuelLitres', 'status', 'inspectionStatus',
+    'inspectionComplete', 'breakMinutes', 'activeMinutes', 'breaks', 'trips',
+  ],
+  inspections: [
+    'id', 'shiftId', 'driverId', 'vehicleId', 'locationId', 'date', 'time',
+    'results', 'fuelLevel', 'notes', 'signature', 'overallResult', 'complete', 'photos',
+  ],
+  incidents: [
+    'id', 'date', 'time', 'driverId', 'vehicleId', 'locationId', 'type', 'severity',
+    'description', 'status', 'reportedBy', 'managerNotes', 'createdAt',
+  ],
+}
+
+/**
+ * Keep only writable fields for a collection. For accounts, `role` and
+ * `password` are never accepted through generic collection routes (a manager
+ * could otherwise PATCH themselves to owner) — they're handled by dedicated,
+ * owner-guarded endpoints instead.
+ */
+export function sanitizeWrite(collection, body, { allowSensitive = false } = {}) {
+  const allow = WRITABLE[collection] || []
+  const out = {}
+  for (const k of allow) {
+    if (body[k] === undefined) continue
+    if (collection === 'accounts' && !allowSensitive && (k === 'role' || k === 'password')) continue
+    out[k] = body[k]
+  }
+  return out
+}

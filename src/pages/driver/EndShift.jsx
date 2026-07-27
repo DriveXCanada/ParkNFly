@@ -146,7 +146,7 @@ export default function EndShift() {
           <Info label="Driver" value={driver?.name} />
           <Info label="Vehicle" value={vehicle?.busNum} />
           <Info label="Date" value={formatDate(shiftDate)} />
-          <Info label="Shift Duration" value={shiftDuration ? formatMinutes(shiftDuration) : '—'} />
+          <Info label="Shift Duration" value={shiftDuration != null ? formatMinutes(shiftDuration) : '—'} />
           <Info label="Break Time" value={formatMinutes(breakMinutes)} />
           <Info label="Active Time" value={activeMinutes != null ? formatMinutes(activeMinutes) : '—'} />
         </div>
